@@ -14,6 +14,7 @@ const createCompletedPuzzle = () => {
   });
   const result = newerSolve(newState, [0,0], getInitState([]), fixedVals);
   console.log(result);
+  return result.completedState;
   // console.log(printState(result));
 };
 
@@ -33,7 +34,7 @@ function copyState(state) {
   }
 }
 
-
+// TODO: This is putting `undefined` into some cells
 function addRandomValuesToState(state, numVals = 1, ) {
   if (numVals === 0) return state;
   const x = getRandom(0, 8);
@@ -44,16 +45,50 @@ function addRandomValuesToState(state, numVals = 1, ) {
   return addRandomValuesToState(state, numVals - 1);
 }
 
-const getRandom = (lowerBound = 1, upperBound = 9) => {
-  return Math.floor(Math.random() * upperBound) + lowerBound;
+export const getRandom = (lowerBound = 1, upperBound = 9) => {
+  return Math.floor(Math.random() * (upperBound - lowerBound + 1)) + lowerBound;
+  // return Math.floor(Math.random() * upperBound) + lowerBound;
 };
 
 const getRandomArrayVal = (arr) => {
-  return arr[getRandom(0, arr.length)];
+  return arr[getRandom(0, arr.length - 1)];
 };
 
 const generate = (difficulty = 'medium') => {
   const completedPuzzle = createCompletedPuzzle();
+  console.log(completedPuzzle);
+  if (completedPuzzle === false) return generate(difficulty);
+  const dugPuzzle = digPuzzle(completedPuzzle, 45, getInitState());
+  console.log(dugPuzzle);
+};
+
+function digPuzzle(state, numToDig, undiggableCells) {
+  if (numToDig === 0) return state;
+  const randY = getRandom(0, 8);
+  const randX = getRandom(0, 8);
+  console.log(`Coord: ${randY} | ${randX}`);
+  if (state[randY][randX] === null || undiggableCells[randY][randX] === true) return digPuzzle(state, numToDig, undiggableCells);
+  const result = digCell(state, [randY, randX]);
+  if (result === false) {
+    const newUndiggableCells = copyState(undiggableCells);
+    newUndiggableCells[randY][randX] = true;
+    return digPuzzle(state, numToDig, newUndiggableCells);
+  }
+  const newState = copyState(state);
+  newState[randY][randX] = null;
+  console.log(`New state dig at ${randY}, ${randX}:`);
+  console.log(printState(newState));
+  return digPuzzle(newState, numToDig - 1, undiggableCells);
+}
+
+const digCell = (state, [y, x]) => {
+  const givenVal = state[y][x];
+  const otherVals = [1,2,3,4,5,6,7,8,9].filter(val => val === givenVal);
+  return otherVals.every(val => {
+    const newState = copyState(state);
+    newState[y][x] = val;
+    return newerSolve(newState, [0, 0], getInitState([]), getInitState()) === false;
+  });
 };
 
 function newSolve(state, [y, x]) {
@@ -122,10 +157,10 @@ function newerSolve(state, [y, x], invalidVals, fixedVals) {
   }
   const allowedVals = getValidAllowed(state, [y, x], invalidVals);
   if (!allowedVals.length) return false;
-  const tryVal = allowedVals[0];
-  console.log(printState(state));
-  console.log("allowed: " + allowedVals);
-  console.log("tryVal: " + tryVal + " on " + y + ", " + x);
+  const tryVal = allowedVals[0];  // TODO: randomize which allowedVal we use to prevent bias towards lower numbers
+  // console.log(printState(state));
+  // console.log("allowed: " + allowedVals);
+  // console.log("tryVal: " + tryVal + " on " + y + ", " + x);
   // console.log(state);
   let newState = copyState(state);
   newState[y][x] = tryVal;

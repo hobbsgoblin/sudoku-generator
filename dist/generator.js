@@ -100,7 +100,7 @@ var generator =
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.default = exports.getRandom = void 0;
 
 var _solver = _interopRequireWildcard(__webpack_require__(/*! ./solver */ "./src/solver.js"));
 
@@ -142,7 +142,8 @@ var createCompletedPuzzle = function createCompletedPuzzle() {
     });
   });
   var result = newerSolve(newState, [0, 0], getInitState([]), fixedVals);
-  console.log(result); // console.log(printState(result));
+  console.log(result);
+  return result.completedState; // console.log(printState(result));
 }; // const copyState = state => state.map(row => row.slice());
 
 
@@ -162,7 +163,8 @@ function copyState(state) {
   } else {
     return state;
   }
-}
+} // TODO: This is putting `undefined` into some cells
+
 
 function addRandomValuesToState(state) {
   var numVals = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
@@ -179,22 +181,65 @@ function addRandomValuesToState(state) {
 var getRandom = function getRandom() {
   var lowerBound = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
   var upperBound = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 9;
-  return Math.floor(Math.random() * upperBound) + lowerBound;
+  return Math.floor(Math.random() * (upperBound - lowerBound + 1)) + lowerBound; // return Math.floor(Math.random() * upperBound) + lowerBound;
 };
 
+exports.getRandom = getRandom;
+
 var getRandomArrayVal = function getRandomArrayVal(arr) {
-  return arr[getRandom(0, arr.length)];
+  return arr[getRandom(0, arr.length - 1)];
 };
 
 var generate = function generate() {
   var difficulty = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'medium';
   var completedPuzzle = createCompletedPuzzle();
+  console.log(completedPuzzle);
+  if (completedPuzzle === false) return generate(difficulty);
+  var dugPuzzle = digPuzzle(completedPuzzle, 45, getInitState());
+  console.log(dugPuzzle);
 };
 
-function newSolve(state, _ref) {
+function digPuzzle(state, numToDig, undiggableCells) {
+  if (numToDig === 0) return state;
+  var randY = getRandom(0, 8);
+  var randX = getRandom(0, 8);
+  console.log("Coord: ".concat(randY, " | ").concat(randX));
+  if (state[randY][randX] === null || undiggableCells[randY][randX] === true) return digPuzzle(state, numToDig, undiggableCells);
+  var result = digCell(state, [randY, randX]);
+
+  if (result === false) {
+    var newUndiggableCells = copyState(undiggableCells);
+    newUndiggableCells[randY][randX] = true;
+    return digPuzzle(state, numToDig, newUndiggableCells);
+  }
+
+  var newState = copyState(state);
+  newState[randY][randX] = null;
+  console.log("New state dig at ".concat(randY, ", ").concat(randX, ":"));
+  console.log((0, _solver.printState)(newState));
+  return digPuzzle(newState, numToDig - 1, undiggableCells);
+}
+
+var digCell = function digCell(state, _ref) {
   var _ref2 = _slicedToArray(_ref, 2),
       y = _ref2[0],
       x = _ref2[1];
+
+  var givenVal = state[y][x];
+  var otherVals = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (val) {
+    return val === givenVal;
+  });
+  return otherVals.every(function (val) {
+    var newState = copyState(state);
+    newState[y][x] = val;
+    return newerSolve(newState, [0, 0], getInitState([]), getInitState()) === false;
+  });
+};
+
+function newSolve(state, _ref3) {
+  var _ref4 = _slicedToArray(_ref3, 2),
+      y = _ref4[0],
+      x = _ref4[1];
 
   var nextCell = function nextCell() {
     if (x === 8 && y === 8) return null;
@@ -258,23 +303,22 @@ var nextCell = function nextCell(curY, curX) {
 // };
 
 
-var getValidAllowed = function getValidAllowed(state, _ref3, invalidVals) {
-  var _ref4 = _slicedToArray(_ref3, 2),
-      y = _ref4[0],
-      x = _ref4[1];
+var getValidAllowed = function getValidAllowed(state, _ref5, invalidVals) {
+  var _ref6 = _slicedToArray(_ref5, 2),
+      y = _ref6[0],
+      x = _ref6[1];
 
   return (0, _solver.getAllowed)(state, [y, x]).filter(function (val) {
     return !invalidVals[y][x].includes(val);
   });
 };
 
-function newerSolve(state, _ref5, invalidVals, fixedVals) {
-  var _ref6 = _slicedToArray(_ref5, 2),
-      y = _ref6[0],
-      x = _ref6[1];
+function newerSolve(state, _ref7, invalidVals, fixedVals) {
+  var _ref8 = _slicedToArray(_ref7, 2),
+      y = _ref8[0],
+      x = _ref8[1];
 
   if (fixedVals[y][x] === 'fixed') {
-    // newState = undefined;
     var _nextCell3 = nextCell(y, x),
         _nextCell4 = _slicedToArray(_nextCell3, 2),
         _nextY = _nextCell4[0],
@@ -285,10 +329,11 @@ function newerSolve(state, _ref5, invalidVals, fixedVals) {
 
   var allowedVals = getValidAllowed(state, [y, x], invalidVals);
   if (!allowedVals.length) return false;
-  var tryVal = allowedVals[0];
-  console.log((0, _solver.printState)(state));
-  console.log("allowed: " + allowedVals);
-  console.log("tryVal: " + tryVal + " on " + y + ", " + x); // console.log(state);
+  var tryVal = allowedVals[0]; // TODO: randomize which allowedVal we use to prevent bias towards lower numbers
+  // console.log(printState(state));
+  // console.log("allowed: " + allowedVals);
+  // console.log("tryVal: " + tryVal + " on " + y + ", " + x);
+  // console.log(state);
 
   var newState = copyState(state);
   newState[y][x] = tryVal;
