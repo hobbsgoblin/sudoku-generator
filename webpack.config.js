@@ -5,7 +5,8 @@ module.exports = {
   },
   output: {
     filename: 'generator.js',
-    library: "generator"
+    library: "generator",
+    libraryTarget: "commonjs2",
   },
   module: {
     rules: [

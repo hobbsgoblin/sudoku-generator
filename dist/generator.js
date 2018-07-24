@@ -1,4 +1,4 @@
-var generator =
+module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -100,11 +100,13 @@ var generator =
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.getRandom = void 0;
+exports.generate = void 0;
 
-var _solver = _interopRequireWildcard(__webpack_require__(/*! ./solver */ "./src/solver.js"));
+var _sudokuCore = __webpack_require__(/*! ./sudoku-core */ "./src/sudoku-core.js");
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj.default = obj; return newObj; } }
+var _solver = _interopRequireDefault(__webpack_require__(/*! ./solver */ "./src/solver.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
@@ -114,57 +116,32 @@ function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = 
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+var generate = function generate() {
+  var difficulty = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'medium';
+  var completedPuzzle = createCompletedPuzzle();
+  if (completedPuzzle === false) return generate(difficulty);
+  var numHolesToDig = 81 - getNumGivens(difficulty);
+  return digPuzzle(completedPuzzle, numHolesToDig, (0, _sudokuCore.getInitState)());
+};
 
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+exports.generate = generate;
 
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
-
-function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
-
-function getInitState() {
-  var fillVal = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-  return Array(9).fill([]).map(function () {
-    return _toConsumableArray(Array(9).fill(fillVal));
-  });
-}
-
-var createCompletedPuzzle = function createCompletedPuzzle() {
-  var numGivens = 11;
-  var initState = getInitState();
-  var newState = addRandomValuesToState(initState, numGivens);
-  console.log((0, _solver.printState)(newState));
-  var fixedVals = newState.map(function (row) {
+var createFixedValsFromState = function createFixedValsFromState(state) {
+  return state.map(function (row) {
     return row.map(function (val) {
       return val === null ? null : 'fixed';
     });
   });
-  var result = newerSolve(newState, [0, 0], getInitState([]), fixedVals);
-  console.log(result);
-  return result.completedState; // console.log(printState(result));
-}; // const copyState = state => state.map(row => row.slice());
+};
 
-
-function copyState(state) {
-  var i, copy;
-
-  if (Array.isArray(state)) {
-    copy = state.slice(0);
-
-    for (i = 0; i < copy.length; i++) {
-      copy[i] = copyState(copy[i]);
-    }
-
-    return copy;
-  } else if (state !== null && _typeof(state) === 'object') {
-    throw 'Cannot clone array containing an object!';
-  } else {
-    return state;
-  }
-} // TODO: This is putting `undefined` into some cells
-
+var createCompletedPuzzle = function createCompletedPuzzle() {
+  var numGivens = 11;
+  var initState = (0, _sudokuCore.getInitState)();
+  var newState = addRandomValuesToState(initState, numGivens);
+  var fixedVals = createFixedValsFromState(newState);
+  var result = (0, _solver.default)(newState, [0, 0], (0, _sudokuCore.getInitState)([]), fixedVals);
+  return result.completedState;
+};
 
 function addRandomValuesToState(state) {
   var numVals = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
@@ -173,7 +150,7 @@ function addRandomValuesToState(state) {
   var y = getRandom(0, 8);
   if (state[y][x] !== null) return addRandomValuesToState(state, numVals); // If already added a value here, try again
 
-  var allowed = (0, _solver.getAllowed)(state, [y, x]);
+  var allowed = (0, _sudokuCore.getAllowed)(state, [y, x]);
   state[y][x] = getRandomArrayVal(allowed);
   return addRandomValuesToState(state, numVals - 1);
 }
@@ -181,42 +158,44 @@ function addRandomValuesToState(state) {
 var getRandom = function getRandom() {
   var lowerBound = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
   var upperBound = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 9;
-  return Math.floor(Math.random() * (upperBound - lowerBound + 1)) + lowerBound; // return Math.floor(Math.random() * upperBound) + lowerBound;
+  return Math.floor(Math.random() * (upperBound - lowerBound + 1)) + lowerBound;
 };
-
-exports.getRandom = getRandom;
 
 var getRandomArrayVal = function getRandomArrayVal(arr) {
   return arr[getRandom(0, arr.length - 1)];
 };
 
-var generate = function generate() {
-  var difficulty = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'medium';
-  var completedPuzzle = createCompletedPuzzle();
-  console.log(completedPuzzle);
-  if (completedPuzzle === false) return generate(difficulty);
-  var dugPuzzle = digPuzzle(completedPuzzle, 45, getInitState());
-  console.log(dugPuzzle);
+var getNumGivens = function getNumGivens(difficulty) {
+  var numGivensRanges = {
+    'very_easy': [50, 55],
+    'easy': [36, 49],
+    'medium': [32, 35],
+    'hard': [28, 31],
+    'very_hard': [22, 27]
+  };
+
+  var _numGivensRanges$diff = _slicedToArray(numGivensRanges[difficulty], 2),
+      min = _numGivensRanges$diff[0],
+      max = _numGivensRanges$diff[1];
+
+  return getRandom(min, max);
 };
 
 function digPuzzle(state, numToDig, undiggableCells) {
   if (numToDig === 0) return state;
   var randY = getRandom(0, 8);
   var randX = getRandom(0, 8);
-  console.log("Coord: ".concat(randY, " | ").concat(randX));
   if (state[randY][randX] === null || undiggableCells[randY][randX] === true) return digPuzzle(state, numToDig, undiggableCells);
   var result = digCell(state, [randY, randX]);
 
   if (result === false) {
-    var newUndiggableCells = copyState(undiggableCells);
+    var newUndiggableCells = (0, _sudokuCore.copyState)(undiggableCells);
     newUndiggableCells[randY][randX] = true;
     return digPuzzle(state, numToDig, newUndiggableCells);
   }
 
-  var newState = copyState(state);
+  var newState = (0, _sudokuCore.copyState)(state);
   newState[randY][randX] = null;
-  console.log("New state dig at ".concat(randY, ", ").concat(randX, ":"));
-  console.log((0, _solver.printState)(newState));
   return digPuzzle(newState, numToDig - 1, undiggableCells);
 }
 
@@ -230,147 +209,15 @@ var digCell = function digCell(state, _ref) {
     return val === givenVal;
   });
   return otherVals.every(function (val) {
-    var newState = copyState(state);
+    var newState = (0, _sudokuCore.copyState)(state);
     newState[y][x] = val;
-    return newerSolve(newState, [0, 0], getInitState([]), getInitState()) === false;
+    return (0, _solver.default)(newState, [0, 0], (0, _sudokuCore.getInitState)([]), (0, _sudokuCore.getInitState)()) === false;
   });
-};
-
-function newSolve(state, _ref3) {
-  var _ref4 = _slicedToArray(_ref3, 2),
-      y = _ref4[0],
-      x = _ref4[1];
-
-  var nextCell = function nextCell() {
-    if (x === 8 && y === 8) return null;
-    if (x === 8) return [y + 1, 0];
-    return [y, x + 1];
-  };
-
-  var prevCell = function prevCell() {
-    if (x === 0 && y === 0) return null;
-    if (x === 0) return [y - 1, 0];
-    return [y, x - 1];
-  }; // const allowed = allowedVals ? allowedVals : getAllowed(state, [y, x]);
-
-
-  if (nextCell() === null && state[y][x] !== null) return state;
-
-  if (nextCell() === null) {
-    var finalState = copyState(state);
-    var finalAllowed = (0, _solver.getAllowed)(state, [8, 8]);
-
-    if (finalAllowed.length) {
-      return finalAllowed[0]; // finalState[y][x] = finalAllowed[0];
-      // console.log(printState(finalState));
-      // return finalState;
-    }
-
-    return undefined;
-  }
-
-  var _nextCell = nextCell(),
-      _nextCell2 = _slicedToArray(_nextCell, 2),
-      nextY = _nextCell2[0],
-      nextX = _nextCell2[1];
-
-  if (state[y][x] === null) {
-    var allowedVals = (0, _solver.getAllowed)(state, [y, x]);
-    var newVal = allowedVals.find(function (val) {
-      console.log("attempting ".concat(val, " on [").concat(y, ", ").concat(x, "]"));
-      var newState = copyState(state);
-      newState[y][x] = val;
-      return newSolve(newState, [nextY, nextX]) !== undefined;
-    });
-    if (newVal === undefined) return undefined;
-    var newState = copyState(state);
-    newState[y][x] = newVal;
-    console.log((0, _solver.printState)(newState));
-    return newSolve(newState, [nextY, nextX]);
-  }
-
-  return newSolve(state, [nextY, nextX]);
-}
-
-var nextCell = function nextCell(curY, curX) {
-  if (curX === 8 && curY === 8) return null;
-  if (curX === 8) return [curY + 1, 0];
-  return [curY, curX + 1];
 }; // const prevCell = () => {
-//   if (x === 0 && y === 0) return null;
+//   if (x === 0 && y === 0) return undefined;
 //   if (x === 0) return [y - 1, 0];
 //   return [y, x - 1];
 // };
-
-
-var getValidAllowed = function getValidAllowed(state, _ref5, invalidVals) {
-  var _ref6 = _slicedToArray(_ref5, 2),
-      y = _ref6[0],
-      x = _ref6[1];
-
-  return (0, _solver.getAllowed)(state, [y, x]).filter(function (val) {
-    return !invalidVals[y][x].includes(val);
-  });
-};
-
-function newerSolve(state, _ref7, invalidVals, fixedVals) {
-  var _ref8 = _slicedToArray(_ref7, 2),
-      y = _ref8[0],
-      x = _ref8[1];
-
-  if (fixedVals[y][x] === 'fixed') {
-    var _nextCell3 = nextCell(y, x),
-        _nextCell4 = _slicedToArray(_nextCell3, 2),
-        _nextY = _nextCell4[0],
-        _nextX = _nextCell4[1];
-
-    return newerSolve(state, [_nextY, _nextX], invalidVals, fixedVals);
-  }
-
-  var allowedVals = getValidAllowed(state, [y, x], invalidVals);
-  if (!allowedVals.length) return false;
-  var tryVal = allowedVals[0]; // TODO: randomize which allowedVal we use to prevent bias towards lower numbers
-  // console.log(printState(state));
-  // console.log("allowed: " + allowedVals);
-  // console.log("tryVal: " + tryVal + " on " + y + ", " + x);
-  // console.log(state);
-
-  var newState = copyState(state);
-  newState[y][x] = tryVal;
-  if (y === 8 && x === 8) return {
-    solved: true,
-    completedState: newState
-  };
-
-  var _nextCell5 = nextCell(y, x),
-      _nextCell6 = _slicedToArray(_nextCell5, 2),
-      nextY = _nextCell6[0],
-      nextX = _nextCell6[1];
-
-  var result = newerSolve(newState, [nextY, nextX], invalidVals, fixedVals);
-  if (_typeof(result) === 'object' && result.solved === true) return result;
-
-  if (result === false) {
-    // console.log('FALSE!');
-    invalidVals[y][x] = invalidVals[y][x].concat(tryVal); // TODO: make immutable
-
-    var newInvalid = copyState(invalidVals).map(function (invRow, invY) {
-      if (invY > y) return invRow.fill([]);
-      if (invY === y) return invRow.fill([], x + 1);
-      return invRow;
-    });
-    newState = undefined;
-    invalidVals = undefined;
-    result = undefined;
-    return newerSolve(state, [y, x], newInvalid, fixedVals);
-  }
-
-  console.log('how did we get here?');
-}
-
-generate();
-var _default = generate;
-exports.default = _default;
 
 /***/ }),
 
@@ -388,7 +235,111 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = solve;
-exports.printState = exports.checkSolutionIsValid = exports.isSolved = exports.arraysAreIdentical = exports.getAllowed = exports.getAdjacentCoords = exports.getAdjacentValues = void 0;
+
+var _sudokuCore = __webpack_require__(/*! ./sudoku-core */ "./src/sudoku-core.js");
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+var nextCell = function nextCell(curY, curX) {
+  if (curX === 8 && curY === 8) return undefined;
+  if (curX === 8) return [curY + 1, 0];
+  return [curY, curX + 1];
+};
+
+var getValidAllowed = function getValidAllowed(state, _ref, invalidVals) {
+  var _ref2 = _slicedToArray(_ref, 2),
+      y = _ref2[0],
+      x = _ref2[1];
+
+  return (0, _sudokuCore.getAllowed)(state, [y, x]).filter(function (val) {
+    return !invalidVals[y][x].includes(val);
+  });
+};
+
+function solve(state, _ref3, invalidVals, fixedVals) {
+  var _ref4 = _slicedToArray(_ref3, 2),
+      y = _ref4[0],
+      x = _ref4[1];
+
+  if (fixedVals[y][x] === 'fixed') {
+    if (y === 8 && x === 8) return {
+      solved: true,
+      completedState: state
+    };
+
+    var _nextCell = nextCell(y, x),
+        _nextCell2 = _slicedToArray(_nextCell, 2),
+        _nextY = _nextCell2[0],
+        _nextX = _nextCell2[1];
+
+    return solve(state, [_nextY, _nextX], invalidVals, fixedVals);
+  }
+
+  var allowedVals = getValidAllowed(state, [y, x], invalidVals);
+  console.log(allowedVals);
+  if (!allowedVals.length) return false;
+  var tryVal = allowedVals[0]; // TODO: randomize which allowedVal we use to prevent bias towards lower numbers
+
+  var newState = (0, _sudokuCore.copyState)(state);
+  newState[y][x] = tryVal;
+  if (y === 8 && x === 8) return {
+    solved: true,
+    completedState: newState
+  };
+
+  var _nextCell3 = nextCell(y, x),
+      _nextCell4 = _slicedToArray(_nextCell3, 2),
+      nextY = _nextCell4[0],
+      nextX = _nextCell4[1];
+
+  var result = solve(newState, [nextY, nextX], invalidVals, fixedVals);
+  if (_typeof(result) === 'object' && result.solved === true) return result;
+
+  if (result === false) {
+    invalidVals[y][x] = invalidVals[y][x].concat(tryVal); // TODO: make immutable
+
+    var newInvalid = (0, _sudokuCore.copyState)(invalidVals).map(function (invRow, invY) {
+      // Remove old state
+      if (invY > y) return invRow.fill([]);
+      if (invY === y) return invRow.fill([], x + 1);
+      return invRow;
+    });
+    newState = undefined; // TODO: Test to see if making these undefined actually reduces memory use
+
+    invalidVals = undefined;
+    result = undefined;
+    return solve(state, [y, x], newInvalid, fixedVals);
+  }
+}
+
+/***/ }),
+
+/***/ "./src/sudoku-core.js":
+/*!****************************!*\
+  !*** ./src/sudoku-core.js ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.getInitState = getInitState;
+exports.copyState = copyState;
+exports.parseState = exports.printState = exports.checkSolutionIsValid = exports.isValidPuzzle = exports.isSolved = exports.arraysAreIdentical = exports.getAllowed = exports.getAdjacentCoords = exports.getAdjacentValues = void 0;
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
@@ -422,10 +373,17 @@ var getAdjacentValues = function getAdjacentValues(state, coord) {
     y: yVals,
     squareVals: squareVals
   };
-}; // Returns all of the coordinates in the same row, column, and square of a given coordinate
-
+};
 
 exports.getAdjacentValues = getAdjacentValues;
+
+function getInitState() {
+  var fillVal = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  return Array(9).fill([]).map(function () {
+    return _toConsumableArray(Array(9).fill(fillVal));
+  });
+} // Returns all of the coordinates in the same row, column, and square of a given coordinate
+
 
 var getAdjacentCoords = function getAdjacentCoords(coord) {
   var _coord2 = _slicedToArray(coord, 2),
@@ -450,108 +408,9 @@ var getAdjacentCoords = function getAdjacentCoords(coord) {
     y: yCoords,
     squareCoords: squareCoords
   };
-}; // Same as getAdjacentCoords but includes given coordinate
-
+};
 
 exports.getAdjacentCoords = getAdjacentCoords;
-
-var getAdjacentCoordsInclusive = function getAdjacentCoordsInclusive(coord) {
-  var _coord3 = _slicedToArray(coord, 2),
-      y = _coord3[0],
-      x = _coord3[1];
-
-  var xCoords = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (y) {
-    return [y, x];
-  });
-  var yCoords = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (x) {
-    return [y, x];
-  });
-  var squareCoords = getSquareCoords(getSquare(y, x));
-  return {
-    x: xCoords,
-    y: yCoords,
-    squareCoords: squareCoords
-  };
-}; // Attempt to find the solution for a given coord
-
-
-var checkForSolution = function checkForSolution(state, coord) {
-  var _coord4 = _slicedToArray(coord, 2),
-      y = _coord4[0],
-      x = _coord4[1];
-
-  if (state[y][x]) return state[y][x];
-  var adjacentCoords = getAdjacentCoords(coord);
-  var allowed = getAllowed(state, coord);
-  var xAllowed = getXAllowed(state, coord);
-  var yAllowed = getYAllowed(state, coord);
-  var squareAllowed = getSquareAllowed(state, coord);
-  if (xAllowed.length === 1) return xAllowed[0];
-  if (yAllowed.length === 1) return yAllowed[0];
-  if (squareAllowed.length === 1) return squareAllowed[0];
-  var options = getOptions(state, coord);
-
-  if (allowed.length === 1) {
-    return allowed[0];
-  }
-
-  if (options.length === 1) {
-    return options[0];
-  }
-
-  if (allowed.length === 0) {
-    var err = new Error();
-    err.data = {
-      state: state,
-      coords: [y, x]
-    };
-    throw err; // If there are no options then there was an error earlier
-  } // Check what OTHER adjacent nulls CAN'T be
-  // For squares, x-line, and y-line
-
-
-  var xNonOptions = getNonOptions(state, adjacentCoords.x);
-  var yNonOptions = getNonOptions(state, adjacentCoords.y);
-  var squareNonOptions = getNonOptions(state, adjacentCoords.squareCoords);
-  if (xNonOptions.length === 1) return xNonOptions[0];
-  if (yNonOptions.length === 1) return yNonOptions[0];
-  if (squareNonOptions.length === 1) return squareNonOptions[0]; // If no solution is found return null
-
-  return null;
-}; // Detect if multiple coords have the exact same options
-// Detect if the number of coords with the same options is the same as the number of values
-// Remove those values from all other coords
-// Check for x, y, and square coords and then intersect results?
-// Create metastate with new options in place of previous getOptions?
-// Otherwise modify getOptions to use do this automatically?
-// test = [
-//     {coord: [2,1], options: [1,2,7,8], mustBeOf: null},
-//     {coord: [5,1], options: [2,7,8], mustBeOf: null},
-//     {coord: [7,1], options: [1,2], mustBeOf: null},
-//     {coord: [8,1], options: [1,2], mustBeOf: null},
-// ];
-// If first array contains second array
-
-
-var arrayContainsArray = function arrayContainsArray(containerArray, array) {
-  return containerArray.filter(function (item) {
-    return Array.isArray(item) && arrayIntersect(item, array).length === array.length;
-  }).length > 0;
-};
-
-var arrayIntersect = function arrayIntersect() {
-  for (var _len = arguments.length, arrs = new Array(_len), _key = 0; _key < _len; _key++) {
-    arrs[_key] = arguments[_key];
-  }
-
-  return arrs.reduce(function (intersecting, arr) {
-    var set1 = new Set(intersecting),
-        set2 = new Set(arr);
-    return _toConsumableArray(set1).filter(function (val) {
-      return set2.has(val);
-    });
-  }, arrs.pop());
-};
 
 var getAllowed = function getAllowed(state, coord) {
   var adjacent = getAdjacentValues(state, coord);
@@ -562,166 +421,6 @@ var getAllowed = function getAllowed(state, coord) {
 };
 
 exports.getAllowed = getAllowed;
-
-var getXAllowed = function getXAllowed(state, coord) {
-  var adjacent = getAdjacentValues(state, coord);
-  return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (num) {
-    return !adjacent.x.includes(num);
-  });
-};
-
-var getYAllowed = function getYAllowed(state, coord) {
-  var adjacent = getAdjacentValues(state, coord);
-  return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (num) {
-    return !adjacent.y.includes(num);
-  });
-};
-
-var getSquareAllowed = function getSquareAllowed(state, coord) {
-  var adjacent = getAdjacentValues(state, coord);
-  return [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (num) {
-    return !adjacent.squareVals.includes(num);
-  });
-};
-
-var getOptions = function getOptions(state, coord) {
-  var allowed = getAllowed(state, coord);
-  var adjCoordsInc = getAdjacentCoordsInclusive(coord); // Get adjacent coordinates, both num and null
-
-  var xMatching = findMatching(state, adjCoordsInc.x);
-  var yMatching = findMatching(state, adjCoordsInc.y);
-  var squareMatching = findMatching(state, adjCoordsInc.squareCoords);
-  [].concat(xMatching, yMatching, squareMatching).forEach(function (match) {
-    if (!arraysAreIdentical(allowed, match)) {
-      allowed = allowed.filter(function (val) {
-        return !match.includes(val);
-      });
-    }
-  });
-  return allowed;
-};
-
-var findMatching = function findMatching(state, adjacent) {
-  var xNullCoords = filterNullCoords(state, adjacent, true); // Null adjacent coordinates
-
-  var xExistingVals = getValues(state, filterNullCoords(state, adjacent)); // Non-null values
-
-  var xNonExistingVals = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (num) {
-    return !xExistingVals.includes(num);
-  }); // Vals not in X yet
-
-  var xEval = xNullCoords.map(function (coord) {
-    return {
-      coord: coord,
-      available: xNonExistingVals,
-      options: getAllowed(state, coord) // Legal values for coord
-
-    };
-  });
-  return xEval.reduce(function (matching, coord) {
-    // Get all OTHER coords with matching options
-    var matchingOps = xEval.filter(function (otherCoord) {
-      return arraysAreIdentical(coord.options, otherCoord.options) && !arraysAreIdentical(coord.coord, otherCoord.coord);
-    });
-
-    if (matchingOps.length === coord.options.length - 1 && !arrayContainsArray(matching, coord.options)) {
-      return matching.concat([coord.options]);
-    }
-
-    return matching;
-  }, []);
-};
-
-var getNonOptions = function getNonOptions(state, coords) {
-  // Get null coordinates
-  var nullCoords = filterNullCoords(state, coords, true);
-  var nonNullCoords = filterNullCoords(state, coords); // Get all values that the null coordinates cannot be,
-  // and that aren't already in the other coordinates
-
-  var nullCoordNonOptions = nullCoords.reduce(function (nonOptions, nullCoord) {
-    // Get all values that the coordinate COULD be
-    var options = getOptions(state, nullCoord); // Add all values that aren't an option for the coordinate
-
-    return nonOptions.concat([1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (num) {
-      return !options.includes(num);
-    }));
-  }, []).filter(function (option) {
-    return !getValues(state, nonNullCoords).includes(option);
-  }); // Get all values that are "non-options" for EVERY null coordinate given
-
-  var remainingNonOptions = nullCoordNonOptions.reduce(function (nonOptions, option, index, arr) {
-    if (arr.filter(function (op) {
-      return op === option;
-    }).length === nullCoords.length) {
-      return nonOptions.concat(option);
-    }
-
-    return nonOptions;
-  }, []); // Return unique values from
-
-  return Array.from(new Set(remainingNonOptions));
-};
-
-var getValues = function getValues(state, coordinates) {
-  return coordinates.map(function (coord) {
-    return getValue(state, coord);
-  });
-};
-
-var filterNullCoords = function filterNullCoords(state, coords) {
-  var onlyNulls = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  if (onlyNulls) {
-    return coords.filter(function (coord) {
-      return getValue(state, coord) === null;
-    });
-  }
-
-  return coords.filter(function (coord) {
-    return getValue(state, coord) !== null;
-  });
-}; // Get the value of a given coordinate from the given puzzle state
-
-
-var getValue = function getValue(state, coordinate) {
-  return state[coordinate[0]][coordinate[1]];
-}; // Get the square (1 through 9) that contains the given coordinates
-// TODO: Consider caching square/coordinate maps to save performance
-
-
-var getSquare = function getSquare(y, x) {
-  return [1, 2, 3, 4, 5, 6, 7, 8, 9].find(function (square) {
-    return getSquareCoords(square).some(function (coord) {
-      return arraysAreIdentical(coord, [y, x]);
-    });
-  });
-}; // Get the coordinates contained within in a given square (1 through 9)
-
-
-var getSquareCoords = function getSquareCoords(square) {
-  // No reason to calculate this each time, stored data as a property
-  return squareCoordMap[square]; // const yMapper = {
-  //   1: [0, 1, 2], 2: [0, 1, 2], 3: [0, 1, 2],
-  //   4: [3, 4, 5], 5: [3, 4, 5], 6: [3, 4, 5],
-  //   7: [6, 7, 8], 8: [6, 7, 8], 9: [6, 7, 8],
-  // };
-  // const xMapper = {
-  //   1: [0, 1, 2], 2: [3, 4, 5], 3: [6, 7, 8],
-  //   4: [0, 1, 2], 5: [3, 4, 5], 6: [6, 7, 8],
-  //   7: [0, 1, 2], 8: [3, 4, 5], 9: [6, 7, 8],
-  // };
-  // const yVals = [].concat(yMapper[square], yMapper[square], yMapper[square]).sort();
-  // const xVals = [].concat(xMapper[square], xMapper[square], xMapper[square]);
-  // return yVals.map((val, index) => [val, xVals[index]]);
-  //
-  // // return yMapper[square].reduce((coords, y) => {
-  // //   return coords.concat(xMapper[square].map(x => [y, x]));
-  // // }, []);
-};
-
-var getUniqueValues = function getUniqueValues(array) {
-  return Array.from(new Set(array));
-};
 
 var arraysAreIdentical = function arraysAreIdentical(arr1, arr2) {
   if (!Array.isArray(arr1) || !Array.isArray(arr2)) return undefined;
@@ -750,6 +449,22 @@ var isSolved = function isSolved(state) {
 
 exports.isSolved = isSolved;
 
+var isValidPuzzle = function isValidPuzzle(state) {
+  var flatState = state.reduce(function (flatState, row) {
+    return flatState.concat(row);
+  }, []);
+  if (!flatState.includes(null)) return false; // a valid puzzle must have at least one blank cell
+
+  return state.some(function (row, y) {
+    // return whether any cell values are not allowed for their coordinate
+    return row.some(function (val, x) {
+      return !getAllowed(state, [y, x]).includes(val);
+    });
+  });
+};
+
+exports.isValidPuzzle = isValidPuzzle;
+
 var checkSolutionIsValid = function checkSolutionIsValid(state) {
   var valsAreValid = function valsAreValid(arr) {
     return arraysAreIdentical([1, 2, 3, 4, 5, 6, 7, 8, 9], arr.slice().sort());
@@ -768,165 +483,30 @@ var checkSolutionIsValid = function checkSolutionIsValid(state) {
   var colsValid = cols.every(valsAreValid);
   var squaresValid = squares.every(valsAreValid);
   return rowsValid && colsValid && squaresValid;
-};
+}; // const copyState = (state)  => state.map(arr => [...arr]);
+
 
 exports.checkSolutionIsValid = checkSolutionIsValid;
 
-var solveShallow = function solveShallow(state) {
-  var x = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-  var y = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-  var prevState = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+function copyState(state) {
+  // if (Array.isArray(state)) return state.slice().map(val => copyState(val));
+  // Switched to FOR loop for performance
+  var i, copy;
 
-  try {
-    state[y][x] = checkForSolution(state, [y, x]);
-  } catch (error) {
-    // console.log(error);
-    // if (error.data) console.log(printState(error.data.state));
-    return {
-      solved: false,
-      state: state,
-      error: error
-    };
-  }
+  if (Array.isArray(state)) {
+    copy = state.slice();
 
-  if (x === 8 && y === 8) {
-    if (isSolved(state)) {
-      console.log(printState(state));
-      console.log('Solved!');
-      return {
-        solved: true,
-        state: state
-      };
+    for (i = 0; i < copy.length; i++) {
+      copy[i] = copyState(copy[i]);
     }
 
-    if (prevState !== null) {
-      if (arraysAreIdentical(state, prevState)) {
-        return {
-          solved: false,
-          state: state
-        }; // Break out if no solution found. Prevents infinite recursion
-      }
-    }
-
-    prevState = copyState(state);
-    return solveShallow(state, 0, 0, prevState);
+    return copy;
   }
 
-  if (x === 8) {
-    return solveShallow(state, 0, y + 1, prevState);
-  }
+  if (state !== null && _typeof(state) === 'object') return false; // You can't clone an object this way
 
-  return solveShallow(state, x + 1, y, prevState);
-};
-
-var solveDeep = function solveDeep(state) {
-  var solveAttempt = solveShallow(state);
-
-  if (solveAttempt.solved === false) {
-    state = copyState(solveAttempt.state); // Just gonna go ahead and do some heavy nested looping here
-    // For each null cell, get it's possible values,
-    // then try solving it with each one until a correct solution is found
-
-    var numFilledCells = state.reduce(function (numFilled, row) {
-      return row.reduce(function (numFilled2, cell) {
-        if (cell) numFilled2++;
-        return numFilled2;
-      }, numFilled);
-    }, 0); // if (numFilledCells < 17) return {solved: false, state: state, error: 'Less than 17 cells'};
-
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-      for (var _iterator = state.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var _step$value = _slicedToArray(_step.value, 2),
-            y = _step$value[0],
-            row = _step$value[1];
-
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
-
-        try {
-          for (var _iterator2 = row.entries()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var _step2$value = _slicedToArray(_step2.value, 2),
-                x = _step2$value[0],
-                val = _step2$value[1];
-
-            if (val === null) {
-              var options = getOptions(state, [y, x]);
-              if (options.length > 8) continue;
-              var _iteratorNormalCompletion3 = true;
-              var _didIteratorError3 = false;
-              var _iteratorError3 = undefined;
-
-              try {
-                for (var _iterator3 = options[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                  var option = _step3.value;
-                  var testState = copyState(state);
-                  testState[y][x] = option;
-                  var result = solveShallow(testState);
-
-                  if (result.solved === true) {
-                    return result;
-                  }
-                }
-              } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
-              } finally {
-                try {
-                  if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-                    _iterator3.return();
-                  }
-                } finally {
-                  if (_didIteratorError3) {
-                    throw _iteratorError3;
-                  }
-                }
-              }
-            }
-          }
-        } catch (err) {
-          _didIteratorError2 = true;
-          _iteratorError2 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-              _iterator2.return();
-            }
-          } finally {
-            if (_didIteratorError2) {
-              throw _iteratorError2;
-            }
-          }
-        }
-      }
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion && _iterator.return != null) {
-          _iterator.return();
-        }
-      } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
-        }
-      }
-    }
-  }
-
-  return solveAttempt;
-};
-
-var copyState = function copyState(state) {
-  return state.map(function (arr) {
-    return _toConsumableArray(arr);
-  });
-};
+  return state;
+}
 
 var printState = function printState(state) {
   return state.reduce(function (text, row, index) {
@@ -953,21 +533,42 @@ var isValidValue = function isValidValue(val) {
   return [1, 2, 3, 4, 5, 6, 7, 8, 9].includes(val);
 };
 
+var getValues = function getValues(state, coordinates) {
+  return coordinates.map(function (coord) {
+    return getValue(state, coord);
+  });
+}; // Get the value of a given coordinate from the given puzzle state
+
+
+var getValue = function getValue(state, coordinate) {
+  return state[coordinate[0]][coordinate[1]];
+}; // Get the square (1 through 9) that contains the given coordinates
+// TODO: Consider caching square/coordinate maps to save performance
+
+
+var getSquare = function getSquare(y, x) {
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9].find(function (square) {
+    return getSquareCoords(square).some(function (coord) {
+      return arraysAreIdentical(coord, [y, x]);
+    });
+  });
+}; // Get the coordinates contained within in a given square (1 through 9)
+
+
+var getSquareCoords = function getSquareCoords(square) {
+  return squareCoordMap[square];
+};
+
 var parseState = function parseState(inputState) {
   return inputState.map(function (row) {
     return row.map(function (val) {
       return isValidValue(val) ? val : null;
     });
   });
-};
+}; // Map of squares to the coordinates they contain
 
-function solve(startState) {
-  var state = parseState(startState);
-  return solveDeep(state);
-}
 
-; // Map of squares to the coordinates they contain
-
+exports.parseState = parseState;
 var squareCoordMap = {
   1: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
   2: [[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [1, 5], [2, 3], [2, 4], [2, 5]],
@@ -978,74 +579,94 @@ var squareCoordMap = {
   7: [[6, 0], [6, 1], [6, 2], [7, 0], [7, 1], [7, 2], [8, 0], [8, 1], [8, 2]],
   8: [[6, 3], [6, 4], [6, 5], [7, 3], [7, 4], [7, 5], [8, 3], [8, 4], [8, 5]],
   9: [[6, 6], [6, 7], [6, 8], [7, 6], [7, 7], [7, 8], [8, 6], [8, 7], [8, 8]]
-}; //
-// const _ = null;
-// const initialState = [
-//   [2,4,3,9,_,8,_,_,_],
-//   [7,9,_,_,4,_,3,_,8],
-//   [_,_,5,7,6,_,2,9,_],
-//   [_,_,9,8,7,2,4,1,_],
-//   [_,_,7,_,_,_,6,_,_],
-//   [_,2,1,4,3,6,7,_,_],
-//   [_,5,4,_,2,7,8,_,_],
-//   [6,_,8,_,9,_,_,2,7],
-//   [_,_,_,6,_,5,9,4,3]
-// ];
+}; // // If first array contains second array
+// const arrayContainsArray = (containerArray, array) => {
+//   return containerArray
+//     .filter((item) => {
+//       return (
+//         Array.isArray(item) &&
+//         arrayIntersect(item, array).length === array.length
+//       );
+//     })
+//     .length > 0;
+// };
+// const arrayIntersect = (...arrs) => {
+//   return arrs.reduce((intersecting, arr) => {
+//     const set1 = new Set(intersecting), set2 = new Set(arr);
+//     return [...set1].filter(val => set2.has(val));
+//   }, arrs.pop());
+// };
+// const getXAllowed = (state, coord) => {
+//   const adjacent = getAdjacentValues(state, coord);
+//   return [1,2,3,4,5,6,7,8,9].filter(num => {
+//     return !adjacent.x.includes(num);
+//   });
+// };
+// const getYAllowed = (state, coord) => {
+//   const adjacent = getAdjacentValues(state, coord);
+//   return [1,2,3,4,5,6,7,8,9].filter(num => {
+//     return !adjacent.y.includes(num);
+//   });
+// };
+// const getSquareAllowed = (state, coord) => {
+//   const adjacent = getAdjacentValues(state, coord);
+//   return [1,2,3,4,5,6,7,8,9].filter(num => {
+//     return !adjacent.squareVals.includes(num);
+//   });
+// };
+// const getOptions = (state, coord) => {
+//   let allowed = getAllowed(state, coord);
+//   const adjCoordsInc = getAdjacentCoordsInclusive(coord);  // Get adjacent coordinates, both num and null
+//   const xMatching = findMatching(state, adjCoordsInc.x);
+//   const yMatching = findMatching(state, adjCoordsInc.y);
+//   const squareMatching = findMatching(state, adjCoordsInc.squareCoords);
 //
-// const challengingState = [
-//   [1,_,_,_,_,8,_,_,9],
-//   [_,_,2,_,_,_,_,_,8],
-//   [_,8,_,5,4,9,_,_,_],
-//   [_,4,_,2,_,_,9,_,_],
-//   [3,_,9,_,_,_,2,_,1],
-//   [_,_,1,_,_,5,_,4,_],
-//   [_,_,_,9,1,2,_,3,_],
-//   [7,_,_,_,_,_,1,_,_],
-//   [2,_,_,7,_,_,_,_,6]
-// ];
+//   [].concat(xMatching, yMatching, squareMatching).forEach(match => {
+//     if (!arraysAreIdentical(allowed, match)) {
+//       allowed = allowed.filter(val => !match.includes(val));
+//     }
+//   });
+//   return allowed;
+// };
+// const findMatching = (state, adjacent) => {
+//   const xNullCoords = filterNullCoords(state, adjacent, true);  // Null adjacent coordinates
+//   const xExistingVals = getValues(state, filterNullCoords(state, adjacent));  // Non-null values
+//   const xNonExistingVals = [1,2,3,4,5,6,7,8,9].filter(num => !xExistingVals.includes(num));  // Vals not in X yet
+//   const xEval = xNullCoords.map(coord => ({
+//     coord: coord,
+//     available: xNonExistingVals,
+//     options: getAllowed(state, coord),  // Legal values for coord
+//   }));
+//   return xEval.reduce((matching, coord) => {
+//     // Get all OTHER coords with matching options
+//     const matchingOps = xEval
+//       .filter(otherCoord => {
+//         return arraysAreIdentical(coord.options, otherCoord.options) &&
+//           !arraysAreIdentical(coord.coord, otherCoord.coord);
+//       });
 //
-// const hardState = [
-//   [_,4,_,1,5,_,_,8,3],
-//   [_,3,_,_,6,_,5,_,_],
-//   [6,_,_,_,_,_,_,_,9],
-//   [_,5,_,_,_,_,_,_,_],
-//   [1,_,_,7,_,8,_,_,2],
-//   [_,_,_,_,_,_,_,6,_],
-//   [5,_,_,_,_,_,_,_,4],
-//   [_,_,4,_,8,_,_,7,_],
-//   [8,6,_,_,2,4,_,9,_]
-// ];
-//
-// const fiendishState = [
-//   [_,_,_,5,_,_,_,6,_],
-//   [8,_,9,_,_,_,_,1,_],
-//   [1,6,_,_,8,7,_,_,_],
-//   [3,_,_,_,2,6,_,_,_],
-//   [_,_,7,_,1,_,6,_,_],
-//   [_,_,_,8,5,_,_,_,3],
-//   [_,_,_,4,7,_,_,2,1],
-//   [_,4,_,_,_,_,9,_,8],
-//   [_,8,_,_,_,3,_,_,_]
-// ];
-// const solver = new Solver();
-// console.log(printState(fiendishState));
-// console.log(solve(fiendishState));
-// const squareData = [1,2,3,4,5,6,7,8,9].map(square => {
-//   return {[square]: solver.getSquareCoords(square)};
-// });
-// console.log(squareData);
-// console.log(JSON.stringify(squareData));
-// const sampleState = [
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null],
-//   [null,null,null,null,null,null,null,null,null]
-// ];
+//     if (matchingOps.length === coord.options.length - 1 &&
+//       !arrayContainsArray(matching, coord.options)) {
+//       return matching.concat([coord.options]);
+//     }
+//     return matching;
+//   }, []);
+// };
+// // Same as getAdjacentCoords but includes given coordinate
+// const getAdjacentCoordsInclusive = (coord) => {
+//   const [y, x] = coord;
+//   const xCoords = [0,1,2,3,4,5,6,7,8].map(y => [y, x]);
+//   const yCoords = [0,1,2,3,4,5,6,7,8].map(x => [y, x]);
+//   const squareCoords = getSquareCoords(getSquare(y, x));
+//   return {x: xCoords, y: yCoords, squareCoords: squareCoords};
+// };
+// const filterNullCoords = (state, coords, onlyNulls = false) => {
+//   if (onlyNulls) {
+//     return coords.filter(coord => getValue(state, coord) === null);
+//   }
+//   return coords.filter(coord => getValue(state, coord) !== null);
+// };
+// const getUniqueValues = (array) => Array.from(new Set(array));
 
 /***/ })
 
