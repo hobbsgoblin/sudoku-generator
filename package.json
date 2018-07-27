@@ -6,6 +6,8 @@
   "dependencies": {
     "@babel/preset-env": "^7.0.0-beta.54",
     "babel-loader": "^8.0.0-beta.4",
+    "sudoku-core": "git://github.com/hobbsgoblin/sudoku-core.git#master",
+    "sudoku-solver": "git://github.com/hobbsgoblin/sudoku-solver.git#master",
     "webpack": "^4.16.1",
     "webpack-cli": "^3.1.0"
   },
