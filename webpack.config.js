@@ -1,17 +1,14 @@
 module.exports = {
-  entry: './src/generator.js',
-  devServer: {
-    contentBase: './dist'
-  },
+  entry: './src/sudoku-generator.js',
   output: {
-    filename: 'generator.js',
-    library: "generator",
+    filename: 'sudoku-generator.js',
+    library: "sudoku-generator",
     libraryTarget: "commonjs2",
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /test\.js$/,
         exclude: /(node_modules)/,
         use: {
           loader: 'babel-loader',
@@ -22,6 +19,4 @@ module.exports = {
       }
     ]
   },
-  mode: 'development',
-  devtool: 'source-map'
 };

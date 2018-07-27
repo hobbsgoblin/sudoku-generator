@@ -1,5 +1,5 @@
-import {getAllowed, copyState, getInitState} from '../node_modules/sudoku-core/src/sudoku-core';
-import solve from '../node_modules/sudoku-solver/dist/solver';
+import {getAllowed, copyState, getInitState} from 'sudoku-core';
+import solve from 'sudoku-solver';
 
 export const generate = (difficulty = 'medium') => {
   const completedPuzzle = createCompletedPuzzle();
