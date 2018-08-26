@@ -1,4 +1,4 @@
-import {getAllowed, copyState, getInitState} from 'sudoku-core';
+import { getAllowed, copyState, getInitState } from 'sudoku-core';
 import solve from 'sudoku-solver';
 
 export const generate = (difficulty = 'medium') => {
@@ -8,16 +8,11 @@ export const generate = (difficulty = 'medium') => {
   return digPuzzle(completedPuzzle, numHolesToDig, getInitState());
 };
 
-const createFixedValsFromState = (state) => {
-  return state.map(row => row.map(val => val === null ? null : 'fixed'));
-};
-
 const createCompletedPuzzle = () => {
   const numGivens = 11;
   const initState = getInitState();
   const newState = addRandomValuesToState(initState, numGivens);
-  const fixedVals = createFixedValsFromState(newState);
-  const result = solve(newState, [0,0], getInitState([]), fixedVals);
+  const result = solve(newState);
   return result.completedState;
 };
 
@@ -69,13 +64,25 @@ function digPuzzle(state, numToDig, undiggableCells) {
 
 const digCell = (state, [y, x]) => {
   const givenVal = state[y][x];
-  const otherVals = [1,2,3,4,5,6,7,8,9].filter(val => val === givenVal);
-  return otherVals.every(val => {
+  const otherAllowedVals = getAllowed(state, [y, x]).filter(val => val !== givenVal);
+  return otherAllowedVals.every(val => {
     const newState = copyState(state);
     newState[y][x] = val;
-    return solve(newState, [0, 0], getInitState([]), getInitState()) === false;
+    return solve(newState) === false;
   });
 };
+
+// const multipleSolutionPuzzle = [
+//   [1,2,3,4,5,6,7,8,9],
+//   [4,7,8,3,1,9,6,2,5],
+//   [6,5,9,7,null,null,4,3,1],
+//   [5,1,4,2,6,7,3,9,8],
+//   [3,6,7,8,9,5,2,1,4],
+//   [8,9,2,1,4,3,5,6,7],
+//   [2,3,5,9,7,1,8,4,6],
+//   [9,8,6,5,3,4,1,7,2],
+//   [7,4,1,6,null,null,9,5,3],
+// ];
 
 // const prevCell = () => {
 //   if (x === 0 && y === 0) return undefined;
