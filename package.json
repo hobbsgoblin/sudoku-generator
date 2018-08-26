@@ -2,7 +2,7 @@
   "name": "sudoku-generator",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/generator.js",
+  "main": "dist/sudoku-generator.js",
   "dependencies": {
     "@babel/preset-env": "^7.0.0-beta.54",
     "babel-loader": "^8.0.0-beta.4",
