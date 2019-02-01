@@ -5,7 +5,8 @@ export const generate = (difficulty = 'medium') => {
   const completedPuzzle = createCompletedPuzzle();
   if (completedPuzzle === false) return generate(difficulty);
   const numHolesToDig = 81 - getNumGivens(difficulty);
-  return digPuzzle(completedPuzzle, numHolesToDig, getInitState());
+  const puzzle = digPuzzle(completedPuzzle, numHolesToDig, getInitState());
+  return {puzzle, solution: completedPuzzle};
 };
 
 const createCompletedPuzzle = () => {
@@ -34,6 +35,7 @@ const getRandomArrayVal = (arr) => {
   return arr[getRandom(0, arr.length - 1)];
 };
 
+// The number of given values in the puzzle
 const getNumGivens = (difficulty) => {
   const numGivensRanges = {
     'very_easy': [50, 55],

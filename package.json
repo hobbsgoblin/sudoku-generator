@@ -4,21 +4,21 @@
   "description": "",
   "main": "dist/sudoku-generator.js",
   "dependencies": {
-    "@babel/preset-env": "^7.0.0-beta.54",
-    "babel-loader": "^8.0.0-beta.4",
+    "@babel/preset-env": "^7.3.1",
+    "babel-loader": "^8.0.5",
     "sudoku-core": "git://github.com/hobbsgoblin/sudoku-core.git#master",
     "sudoku-solver": "git://github.com/hobbsgoblin/sudoku-solver.git#master",
-    "webpack": "^4.16.1",
-    "webpack-cli": "^3.1.0"
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.54",
+    "@babel/core": "^7.2.2",
     "babel-core": "^7.0.0-bridge.0",
-    "babel-jest": "^23.4.0",
+    "babel-jest": "^23.6.0",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
-    "jest": "^23.4.1",
-    "regenerator-runtime": "^0.12.0",
-    "webpack-dev-server": "^3.1.4"
+    "jest": "^23.6.0",
+    "regenerator-runtime": "^0.12.1",
+    "webpack-dev-server": "^3.1.14"
   },
   "scripts": {
     "build": "webpack --config webpack.config.js",
